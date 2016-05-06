@@ -4,63 +4,90 @@ var ReactDOM = require('react-dom');
 var mqtt = require('mqtt');
 var RTDataMonitorPanel = require('./rTDataMonitorPanel.js');
 
-var client;
+var client, rTDatas = null;
 var RTDataDashBoard = React.createClass({
     getInitialState: function () {
         return {
-            stationName: "NWHYJZ",
-            currentDataName: null,
-            rTdatas: {}
+            rTDatas: null,
+            updateDataName: null
         };
     },
     componentDidMount: function () {
         var dashBoard = this;
         client = mqtt.connect('ws://10.0.3.16:61623', {"username": "gridvo", "password": "gridvo"});
         client.on('connect', function () {
-            client.subscribe(`${dashBoard.state.stationName}/#`);
-            client.publish(`startRTDataMonitor/${dashBoard.state.stationName}`, '');
+            client.subscribe(`${dashBoard.props.stationName}/#`);
+            client.publish(`startRTDataMonitor/${dashBoard.props.stationName}`, '');
             console.log("connect success");
         });
         client.on('message', function (topic, message) {
-            if (topic == `${dashBoard.state.stationName}/startRTDataMonitor`) {
-                var result = JSON.parse(message.toString());
-                if (result.startSuccess) {
-                    dashBoard.setState({
-                        currentDataName: _.keys(result.rTdatas)[0],
-                        rTdatas: result.rTdatas
-                    });
-                }
-                else {
-                    let stationRTDataConfig = {};
-                    stationRTDataConfig.stationName = dashBoard.state.stationName;
-                    stationRTDataConfig.rTDataConfigs = {};
-                    for (let dataName of _.keys(result.rTdatas)) {
-                        stationRTDataConfig.rTDataConfigs[dataName] = {};
-                        stationRTDataConfig.rTDataConfigs[dataName].dataName = dataName;
-                        stationRTDataConfig.rTDataConfigs[dataName].timeSpace = 1000 * 6;
-                        stationRTDataConfig.rTDataConfigs[dataName].timeLong = 1000 * 60 * 60 * 4;
+                if (topic == `${dashBoard.props.stationName}/startRTDataMonitor`) {
+                    var result = JSON.parse(message.toString());
+                    if (result.startSuccess) {
+                        for (let dataName of  _.keys(result.rTdatas)) {
+                            if (dataName.indexOf("_P") == -1 && dataName.indexOf("_Q") == -1 && dataName.indexOf("_LJYL") == -1) {
+                                delete result.rTdatas[dataName];
+                            }
+                        }
+                        rTDatas = result.rTdatas;
+                        dashBoard.setState({
+                            rTDatas: rTDatas
+                        });
                     }
-                    client.publish(`setStationRTData/${dashBoard.state.stationName}`, JSON.stringify(stationRTDataConfig));
+                    else {
+                        let stationRTDataConfig = {};
+                        stationRTDataConfig.stationName = dashBoard.props.stationName;
+                        stationRTDataConfig.rTDataConfigs = {};
+                        for (let dataName of _.keys(result.rTdatas)) {
+                            stationRTDataConfig.rTDataConfigs[dataName] = {};
+                            stationRTDataConfig.rTDataConfigs[dataName].dataName = dataName;
+                            stationRTDataConfig.rTDataConfigs[dataName].timeSpace = 1000 * 60;
+                            stationRTDataConfig.rTDataConfigs[dataName].timeLong = 1000 * 60 * 60 * 4;
+                        }
+                        client.publish(`setStationRTData/${dashBoard.props.stationName}`, JSON.stringify(stationRTDataConfig));
+                    }
+                }
+                if (topic == `${dashBoard.props.stationName}/pubRTData`) {
+                    var result = JSON.parse(message.toString());
+                    if (!_.isNull(rTDatas)) {
+                        if (result.dataName.indexOf("_P") != -1 || result.dataName.indexOf("_Q") != -1 || result.dataName.indexOf("_LJYL") != -1) {
+                            for (let n = 0; n < result.datas.length; n++) {
+                                if (rTDatas[result.dataName].datas.length < (rTDatas[result.dataName].timeLong / rTDatas[result.dataName].timeSpace)) {
+                                    rTDatas[result.dataName].datas.push(result.datas[n]);
+                                } else {
+                                    rTDatas[result.dataName].datas.shift();
+                                    rTDatas[result.dataName].datas.push(result.datas[n]);
+                                }
+                                console.log(result.datas[n]);
+                            }
+                            dashBoard.setState({
+                                rTDatas: rTDatas,
+                                updateDataName: result.dataName
+                            });
+                        }
+                    }
                 }
             }
-        });
+        );
         client.on('close', function () {
             console.log("close success");
         });
     },
     componentWillUnmount: function () {
         client.end();
-    },
+    }
+
+    ,
     backMainDashBoard: function (event) {
         var MainDashBoard = require("./mainDashBoard.js");
         ReactDOM.render(
-            <MainDashBoard/>,
+            <MainDashBoard stationName={this.props.stationName}/>,
             document.getElementById('content')
         );
-    },
+    }
+    ,
     render: function () {
-        var {currentDataName,rTdatas} = this.state;
-        if (_.isNull(currentDataName)) {
+        if (_.isNull(this.state.rTDatas)) {
             return (
                 <div className="weui_tab">
                     <div id="rt_data_content" className="weui_tab_bd">
@@ -112,7 +139,8 @@ var RTDataDashBoard = React.createClass({
             return (
                 <div className="weui_tab">
                     <div id="rt_data_content" className="weui_tab_bd">
-                        <RTDataMonitorPanel dataName={currentDataName} rTData={rTdatas[currentDataName]}/>
+                        <RTDataMonitorPanel stationName={this.props.stationName} rTDatas={this.state.rTDatas}
+                                            updateDataName={this.state.updateDataName}/>
                     </div>
                     <div className="weui_tabbar">
                         <a href="javascript:;" className="weui_tabbar_item weui_bar_item_on">

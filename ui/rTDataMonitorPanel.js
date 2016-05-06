@@ -1,55 +1,131 @@
 var _ = require('underscore');
 var React = require('react');
-var d3 = require('d3');
+var Echarts = require('echarts');
 
-import ReStock from "react-stockcharts";
-
-var { ChartCanvas, Chart, EventCapture } = ReStock;
-var { AreaSeries } = ReStock.series;
-var { MouseCoordinates } = ReStock.coordinates;
-var { XAxis, YAxis } = ReStock.axes;
-
+var chart;
 var RTDataMonitorPanel = React.createClass({
-    getDefaultProps: function () {
-        return {
-            width: 800,
-            height: 600,
-            dataName: "",
-            type: "hybrid",
-            rTData: null
+    componentDidMount: function () {
+        chart = Echarts.init(document.getElementById('rTDataCharts'));
+        var {rTDatas} = this.props;
+        var legend = [];
+        var series = [];
+        var dates = [];
+        for (let dataName of _.keys(rTDatas)) {
+            legend.push(dataName);
+            let serie = {};
+            serie.name = dataName;
+            serie.type = "line";
+            if (false) {
+                serie.yAxisIndex = 1;
+            }
+            if (dataName.indexOf("_LJYL") != -1) {
+                serie.yAxisIndex = 2;
+                serie.hoverAnimation = false;
+                serie.areaStyle = {normal: {}};
+                serie.lineStyle = {normal: {width: 1}};
+            }
+            serie.data = [];
+            for (let data of rTDatas[dataName].datas) {
+                if (!_.isNull(data)) {
+                    serie.data.push(data.value);
+                    let year, month, date, hours, minutes, timestamp;
+                    timestamp = new Date(data.timestamp);
+                    year = timestamp.getFullYear();
+                    month = timestamp.getMonth();
+                    date = timestamp.getDate();
+                    hours = timestamp.getHours();
+                    minutes = timestamp.getMinutes();
+                    dates.push(`${year}/${month + 1}/${date} ${hours}:${minutes}`);
+                }
+            }
+            series.push(serie);
+        }
+        var option = {
+            title: {
+                text: "",
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data: legend,
+                x: "left"
+            },
+            dataZoom: [
+                {
+                    show: true,
+                    realtime: true,
+                    start: 75,
+                    end: 100
+                },
+                {
+                    type: 'inside',
+                    realtime: true,
+                    start: 75,
+                    end: 100
+                }
+            ],
+            xAxis: {
+                splitNumber: 12,
+                axisLine: {onZero: false},
+                data: dates
+            },
+            yAxis: [{
+                name: "发电量",
+                type: 'value',
+                splitNumber: 10
+            }, {
+                name: "水位",
+                type: 'value',
+            }, {
+                name: "降雨量",
+                nameLocation: 'middle',
+                type: 'value',
+                splitNumber: 0,
+                axisTick: {
+                    inside: true
+                },
+                axisLabel: {
+                    inside: true
+                }
+            }],
+            series: series
         };
+        chart.setOption(option);
     },
-    render: function () {
-        var {type,dataName,rTData,width,height} = this.props;
-        var data = [];
-        if (!_.isNull(rTData)) {
-            for (let d of rTData.datas) {
-                let o = {};
-                o.value = d.value;
-                o.timestamp = new Date(d.timestamp);
-                data.push(o);
+    componentDidUpdate: function () {
+        var {rTDatas,updateDataName} = this.props;
+        var series = [];
+        var dates = [];
+        let serie = {};
+        serie.name = updateDataName;
+        serie.data = [];
+        for (let data of rTDatas[updateDataName].datas) {
+            if (!_.isNull(data)) {
+                serie.data.push(data.value);
+                let year, month, date, hours, minutes, timestamp;
+                timestamp = new Date(data.timestamp);
+                year = timestamp.getFullYear();
+                month = timestamp.getMonth();
+                date = timestamp.getDate();
+                hours = timestamp.getHours();
+                minutes = timestamp.getMinutes();
+                dates.push(`${year}/${month + 1}/${date} ${hours}:${minutes}`);
             }
         }
+        series.push(serie);
+        var option = {
+            xAxis: {
+                data: dates
+            },
+            yAxis: {},
+            series: series
+        };
+        chart.setOption(option);
+    },
+    render: function () {
         return (
-            <div classNmae="weui_panel">
-                <div classNmae="weui_panel_hd">{this.props.dataName}</div>
-                <div classNmae="weui_panel_bd">
-                    <ChartCanvas width={width} height={height}
-                                 margin={{left: 100, right: 100, top:10, bottom: 50}}
-                                 seriesName={dataName}
-                                 data={data} type={type}
-                                 xAccessor={d => d.timestamp} xScale={d3.time.scale()}>
-                        <Chart id={0} yExtents={d => d.value} yMousePointerDisplayLocation="right"
-                               yMousePointerDisplayFormat={d3.format(".2f")}>
-                            <XAxis axisAt="bottom" orient="bottom" ticks={32}/>
-                            <YAxis axisAt="left" orient="left"/>
-                            <AreaSeries yAccessor={(d) => d.value}/>
-                        </Chart>
-                        <MouseCoordinates xDisplayFormat={d3.time.format("%m-%d %H:%M")}/>
-                        <EventCapture mouseMove={true} zoom={false} pan={true}/>
-                    </ChartCanvas>
-                </div>
-            </div>
+            <div id="rTDataCharts" style={{width: "100%",height:"100%"}}></div>
         );
     }
 });

@@ -2,11 +2,10 @@
   "name": "gridvoui",
   "version": "0.0.1",
   "dependencies": {
-    "d3": "^3.5.16",
+    "echarts": "^3.1.7",
     "mqtt": "^1.9.0",
     "react": "^0.14.6",
     "react-dom": "^0.14.6",
-    "react-stockcharts": "^0.4.0",
     "underscore": "^1.8.3",
     "weui": "^0.4.1"
   },

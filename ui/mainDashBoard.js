@@ -5,7 +5,7 @@ var RTDataDashBoard = require('./rTDataDashBoard.js');
 var MainDashBoard = React.createClass({
     loadRTDataDashBoard: function (event) {
         ReactDOM.render(
-            <RTDataDashBoard/>,
+            <RTDataDashBoard stationName={this.props.stationName}/>,
             document.getElementById('content')
         );
     },
