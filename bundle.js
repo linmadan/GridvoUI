@@ -88310,6 +88310,14 @@ var RTDataDashBoard = React.createClass({
             if (topic == dashBoard.props.stationName + '/startRTDataMonitor') {
                 var result = JSON.parse(message.toString());
                 if (result.startSuccess) {
+                    rTDatas = result.rTdatas;
+                    dashBoard.setState({
+                        rTDatas: rTDatas
+                    });
+                } else {
+                    var stationRTDataConfig = {};
+                    stationRTDataConfig.stationName = dashBoard.props.stationName;
+                    stationRTDataConfig.rTDataConfigs = {};
                     var _iteratorNormalCompletion = true;
                     var _didIteratorError = false;
                     var _iteratorError = undefined;
@@ -88319,7 +88327,17 @@ var RTDataDashBoard = React.createClass({
                             var dataName = _step.value;
 
                             if (dataName.indexOf("_P") == -1 && dataName.indexOf("_Q") == -1 && dataName.indexOf("_LJYL") == -1) {
-                                delete result.rTdatas[dataName];
+                                stationRTDataConfig.rTDataConfigs[dataName] = {};
+                                stationRTDataConfig.rTDataConfigs[dataName].dataName = dataName;
+                                stationRTDataConfig.rTDataConfigs[dataName].openRDM = false;
+                                stationRTDataConfig.rTDataConfigs[dataName].timeSpace = 1000 * 60;
+                                stationRTDataConfig.rTDataConfigs[dataName].timeLong = 1000 * 60 * 60 * 4;
+                            } else {
+                                stationRTDataConfig.rTDataConfigs[dataName] = {};
+                                stationRTDataConfig.rTDataConfigs[dataName].dataName = dataName;
+                                stationRTDataConfig.rTDataConfigs[dataName].openRDM = true;
+                                stationRTDataConfig.rTDataConfigs[dataName].timeSpace = 1000 * 60;
+                                stationRTDataConfig.rTDataConfigs[dataName].timeLong = 1000 * 60 * 60 * 4;
                             }
                         }
                     } catch (err) {
@@ -88337,26 +88355,27 @@ var RTDataDashBoard = React.createClass({
                         }
                     }
 
-                    rTDatas = result.rTdatas;
-                    dashBoard.setState({
-                        rTDatas: rTDatas
-                    });
-                } else {
-                    var stationRTDataConfig = {};
-                    stationRTDataConfig.stationName = dashBoard.props.stationName;
-                    stationRTDataConfig.rTDataConfigs = {};
+                    client.publish('setStationRTData/' + dashBoard.props.stationName, JSON.stringify(stationRTDataConfig));
+                }
+            }
+            if (topic == dashBoard.props.stationName + '/pubRTData') {
+                var result = JSON.parse(message.toString());
+                if (!_.isNull(rTDatas)) {
                     var _iteratorNormalCompletion2 = true;
                     var _didIteratorError2 = false;
                     var _iteratorError2 = undefined;
 
                     try {
-                        for (var _iterator2 = _.keys(result.rTdatas)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                            var _dataName = _step2.value;
+                        for (var _iterator2 = result.datas[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                            var data = _step2.value;
 
-                            stationRTDataConfig.rTDataConfigs[_dataName] = {};
-                            stationRTDataConfig.rTDataConfigs[_dataName].dataName = _dataName;
-                            stationRTDataConfig.rTDataConfigs[_dataName].timeSpace = 1000 * 60;
-                            stationRTDataConfig.rTDataConfigs[_dataName].timeLong = 1000 * 60 * 60 * 4;
+                            if (rTDatas[result.dataName].datas.length < rTDatas[result.dataName].timeLong / rTDatas[result.dataName].timeSpace) {
+                                rTDatas[result.dataName].datas.push(data);
+                            } else {
+                                rTDatas[result.dataName].datas.shift();
+                                rTDatas[result.dataName].datas.push(data);
+                            }
+                            console.log(data);
                         }
                     } catch (err) {
                         _didIteratorError2 = true;
@@ -88373,27 +88392,10 @@ var RTDataDashBoard = React.createClass({
                         }
                     }
 
-                    client.publish('setStationRTData/' + dashBoard.props.stationName, JSON.stringify(stationRTDataConfig));
-                }
-            }
-            if (topic == dashBoard.props.stationName + '/pubRTData') {
-                var result = JSON.parse(message.toString());
-                if (!_.isNull(rTDatas)) {
-                    if (result.dataName.indexOf("_P") != -1 || result.dataName.indexOf("_Q") != -1 || result.dataName.indexOf("_LJYL") != -1) {
-                        for (var n = 0; n < result.datas.length; n++) {
-                            if (rTDatas[result.dataName].datas.length < rTDatas[result.dataName].timeLong / rTDatas[result.dataName].timeSpace) {
-                                rTDatas[result.dataName].datas.push(result.datas[n]);
-                            } else {
-                                rTDatas[result.dataName].datas.shift();
-                                rTDatas[result.dataName].datas.push(result.datas[n]);
-                            }
-                            console.log(result.datas[n]);
-                        }
-                        dashBoard.setState({
-                            rTDatas: rTDatas,
-                            updateDataName: result.dataName
-                        });
-                    }
+                    dashBoard.setState({
+                        rTDatas: rTDatas,
+                        updateDataName: result.dataName
+                    });
                 }
             }
         });
