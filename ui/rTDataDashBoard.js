@@ -8,8 +8,7 @@ var client, rTDatas = null;
 var RTDataDashBoard = React.createClass({
     getInitialState: function () {
         return {
-            rTDatas: null,
-            updateDataName: null
+            rTDatas: null
         };
     },
     componentDidMount: function () {
@@ -25,8 +24,20 @@ var RTDataDashBoard = React.createClass({
                     var result = JSON.parse(message.toString());
                     if (result.startSuccess) {
                         rTDatas = result.rTdatas;
+                        let maxTimeLong = 0, minTimeSpace = 1000 * 60 * 60;
+                        for (let dataName of _.keys(rTDatas)) {
+                            let rTData = rTDatas[dataName];
+                            if (rTData.timeLong > maxTimeLong) {
+                                maxTimeLong = rTData.timeLong;
+                            }
+                            if (rTData.timeSpace < minTimeSpace) {
+                                minTimeSpace = rTData.timeSpace;
+                            }
+                        }
                         dashBoard.setState({
-                            rTDatas: rTDatas
+                            rTDatas: rTDatas,
+                            timeLong: maxTimeLong,
+                            timeSpace: minTimeSpace
                         });
                     }
                     else {
@@ -34,7 +45,7 @@ var RTDataDashBoard = React.createClass({
                         stationRTDataConfig.stationName = dashBoard.props.stationName;
                         stationRTDataConfig.rTDataConfigs = {};
                         for (let dataName of _.keys(result.rTdatas)) {
-                            if (dataName.indexOf("_P") == -1 && dataName.indexOf("_Q") == -1 && dataName.indexOf("_LJYL") == -1) {
+                            if (dataName.indexOf("_P") == -1 && dataName.indexOf("_Q") == -1 && dataName.indexOf("_LJYL") == -1 && dataName.indexOf("_SQSW") == -1 && dataName.indexOf("_SHSW") == -1) {
                                 stationRTDataConfig.rTDataConfigs[dataName] = {};
                                 stationRTDataConfig.rTDataConfigs[dataName].dataName = dataName;
                                 stationRTDataConfig.rTDataConfigs[dataName].openRDM = false;
@@ -65,8 +76,7 @@ var RTDataDashBoard = React.createClass({
                             console.log(data);
                         }
                         dashBoard.setState({
-                            rTDatas: rTDatas,
-                            updateDataName: result.dataName
+                            rTDatas: rTDatas
                         });
                     }
                 }
@@ -143,7 +153,8 @@ var RTDataDashBoard = React.createClass({
                 <div className="weui_tab">
                     <div id="rt_data_content" className="weui_tab_bd">
                         <RTDataMonitorPanel stationName={this.props.stationName} rTDatas={this.state.rTDatas}
-                                            updateDataName={this.state.updateDataName}/>
+                                            timeLong={this.state.timeLong}
+                                            timeSpace={this.state.timeSpace}/>
                     </div>
                     <div className="weui_tabbar">
                         <a href="javascript:;" className="weui_tabbar_item weui_bar_item_on">

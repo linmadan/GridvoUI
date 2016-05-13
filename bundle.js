@@ -88294,8 +88294,7 @@ var RTDataDashBoard = React.createClass({
 
     getInitialState: function getInitialState() {
         return {
-            rTDatas: null,
-            updateDataName: null
+            rTDatas: null
         };
     },
     componentDidMount: function componentDidMount() {
@@ -88311,33 +88310,22 @@ var RTDataDashBoard = React.createClass({
                 var result = JSON.parse(message.toString());
                 if (result.startSuccess) {
                     rTDatas = result.rTdatas;
-                    dashBoard.setState({
-                        rTDatas: rTDatas
-                    });
-                } else {
-                    var stationRTDataConfig = {};
-                    stationRTDataConfig.stationName = dashBoard.props.stationName;
-                    stationRTDataConfig.rTDataConfigs = {};
+                    var maxTimeLong = 0,
+                        minTimeSpace = 1000 * 60 * 60;
                     var _iteratorNormalCompletion = true;
                     var _didIteratorError = false;
                     var _iteratorError = undefined;
 
                     try {
-                        for (var _iterator = _.keys(result.rTdatas)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                        for (var _iterator = _.keys(rTDatas)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
                             var dataName = _step.value;
 
-                            if (dataName.indexOf("_P") == -1 && dataName.indexOf("_Q") == -1 && dataName.indexOf("_LJYL") == -1) {
-                                stationRTDataConfig.rTDataConfigs[dataName] = {};
-                                stationRTDataConfig.rTDataConfigs[dataName].dataName = dataName;
-                                stationRTDataConfig.rTDataConfigs[dataName].openRDM = false;
-                                stationRTDataConfig.rTDataConfigs[dataName].timeSpace = 1000 * 60;
-                                stationRTDataConfig.rTDataConfigs[dataName].timeLong = 1000 * 60 * 60 * 4;
-                            } else {
-                                stationRTDataConfig.rTDataConfigs[dataName] = {};
-                                stationRTDataConfig.rTDataConfigs[dataName].dataName = dataName;
-                                stationRTDataConfig.rTDataConfigs[dataName].openRDM = true;
-                                stationRTDataConfig.rTDataConfigs[dataName].timeSpace = 1000 * 60;
-                                stationRTDataConfig.rTDataConfigs[dataName].timeLong = 1000 * 60 * 60 * 4;
+                            var rTData = rTDatas[dataName];
+                            if (rTData.timeLong > maxTimeLong) {
+                                maxTimeLong = rTData.timeLong;
+                            }
+                            if (rTData.timeSpace < minTimeSpace) {
+                                minTimeSpace = rTData.timeSpace;
                             }
                         }
                     } catch (err) {
@@ -88355,27 +88343,36 @@ var RTDataDashBoard = React.createClass({
                         }
                     }
 
-                    client.publish('setStationRTData/' + dashBoard.props.stationName, JSON.stringify(stationRTDataConfig));
-                }
-            }
-            if (topic == dashBoard.props.stationName + '/pubRTData') {
-                var result = JSON.parse(message.toString());
-                if (!_.isNull(rTDatas)) {
+                    dashBoard.setState({
+                        rTDatas: rTDatas,
+                        timeLong: maxTimeLong,
+                        timeSpace: minTimeSpace
+                    });
+                } else {
+                    var stationRTDataConfig = {};
+                    stationRTDataConfig.stationName = dashBoard.props.stationName;
+                    stationRTDataConfig.rTDataConfigs = {};
                     var _iteratorNormalCompletion2 = true;
                     var _didIteratorError2 = false;
                     var _iteratorError2 = undefined;
 
                     try {
-                        for (var _iterator2 = result.datas[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                            var data = _step2.value;
+                        for (var _iterator2 = _.keys(result.rTdatas)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                            var _dataName = _step2.value;
 
-                            if (rTDatas[result.dataName].datas.length < rTDatas[result.dataName].timeLong / rTDatas[result.dataName].timeSpace) {
-                                rTDatas[result.dataName].datas.push(data);
+                            if (_dataName.indexOf("_P") == -1 && _dataName.indexOf("_Q") == -1 && _dataName.indexOf("_LJYL") == -1 && _dataName.indexOf("_SQSW") == -1 && _dataName.indexOf("_SHSW") == -1) {
+                                stationRTDataConfig.rTDataConfigs[_dataName] = {};
+                                stationRTDataConfig.rTDataConfigs[_dataName].dataName = _dataName;
+                                stationRTDataConfig.rTDataConfigs[_dataName].openRDM = false;
+                                stationRTDataConfig.rTDataConfigs[_dataName].timeSpace = 1000 * 60;
+                                stationRTDataConfig.rTDataConfigs[_dataName].timeLong = 1000 * 60 * 60 * 4;
                             } else {
-                                rTDatas[result.dataName].datas.shift();
-                                rTDatas[result.dataName].datas.push(data);
+                                stationRTDataConfig.rTDataConfigs[_dataName] = {};
+                                stationRTDataConfig.rTDataConfigs[_dataName].dataName = _dataName;
+                                stationRTDataConfig.rTDataConfigs[_dataName].openRDM = true;
+                                stationRTDataConfig.rTDataConfigs[_dataName].timeSpace = 1000 * 60;
+                                stationRTDataConfig.rTDataConfigs[_dataName].timeLong = 1000 * 60 * 60 * 4;
                             }
-                            console.log(data);
                         }
                     } catch (err) {
                         _didIteratorError2 = true;
@@ -88392,9 +88389,45 @@ var RTDataDashBoard = React.createClass({
                         }
                     }
 
+                    client.publish('setStationRTData/' + dashBoard.props.stationName, JSON.stringify(stationRTDataConfig));
+                }
+            }
+            if (topic == dashBoard.props.stationName + '/pubRTData') {
+                var result = JSON.parse(message.toString());
+                if (!_.isNull(rTDatas)) {
+                    var _iteratorNormalCompletion3 = true;
+                    var _didIteratorError3 = false;
+                    var _iteratorError3 = undefined;
+
+                    try {
+                        for (var _iterator3 = result.datas[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                            var data = _step3.value;
+
+                            if (rTDatas[result.dataName].datas.length < rTDatas[result.dataName].timeLong / rTDatas[result.dataName].timeSpace) {
+                                rTDatas[result.dataName].datas.push(data);
+                            } else {
+                                rTDatas[result.dataName].datas.shift();
+                                rTDatas[result.dataName].datas.push(data);
+                            }
+                            console.log(data);
+                        }
+                    } catch (err) {
+                        _didIteratorError3 = true;
+                        _iteratorError3 = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                                _iterator3.return();
+                            }
+                        } finally {
+                            if (_didIteratorError3) {
+                                throw _iteratorError3;
+                            }
+                        }
+                    }
+
                     dashBoard.setState({
-                        rTDatas: rTDatas,
-                        updateDataName: result.dataName
+                        rTDatas: rTDatas
                     });
                 }
             }
@@ -88506,7 +88539,8 @@ var RTDataDashBoard = React.createClass({
                     'div',
                     { id: 'rt_data_content', className: 'weui_tab_bd' },
                     React.createElement(RTDataMonitorPanel, { stationName: this.props.stationName, rTDatas: this.state.rTDatas,
-                        updateDataName: this.state.updateDataName })
+                        timeLong: this.state.timeLong,
+                        timeSpace: this.state.timeSpace })
                 ),
                 React.createElement(
                     'div',
@@ -88574,11 +88608,31 @@ var RTDataMonitorPanel = React.createClass({
 
     componentDidMount: function componentDidMount() {
         chart = Echarts.init(document.getElementById('rTDataCharts'));
-        var rTDatas = this.props.rTDatas;
+        var _props = this.props;
+        var rTDatas = _props.rTDatas;
+        var timeLong = _props.timeLong;
+        var timeSpace = _props.timeSpace;
 
+        var datesCount = timeLong / timeSpace;
+        var dates = new Array(datesCount);
+        var cDate = new Date();
+        for (var n = datesCount; n > 0; n--) {
+            var year = void 0,
+                month = void 0,
+                day = void 0,
+                hours = void 0,
+                minutes = void 0,
+                date = void 0;
+            date = new Date(cDate.getTime() - (datesCount - n) * timeSpace);
+            year = date.getFullYear();
+            month = date.getMonth();
+            day = date.getDate();
+            hours = date.getHours();
+            minutes = date.getMinutes();
+            dates[n - 1] = year + '/' + (month + 1) + '/' + day + ' ' + hours + ':' + minutes;
+        }
         var legend = [];
         var series = [];
-        var dates = [];
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -88591,7 +88645,8 @@ var RTDataMonitorPanel = React.createClass({
                 var serie = {};
                 serie.name = dataName;
                 serie.type = "line";
-                if (false) {
+                if (dataName.indexOf("_SQSW") != -1 || dataName.indexOf("_SHSW") != -1) {
+                    serie.type = "bar";
                     serie.yAxisIndex = 1;
                 }
                 if (dataName.indexOf("_LJYL") != -1) {
@@ -88600,7 +88655,7 @@ var RTDataMonitorPanel = React.createClass({
                     serie.areaStyle = { normal: {} };
                     serie.lineStyle = { normal: { width: 1 } };
                 }
-                serie.data = [];
+                serie.data = new Array(dates.length).fill(undefined);
                 var _iteratorNormalCompletion2 = true;
                 var _didIteratorError2 = false;
                 var _iteratorError2 = undefined;
@@ -88610,20 +88665,22 @@ var RTDataMonitorPanel = React.createClass({
                         var data = _step2.value;
 
                         if (!_.isNull(data)) {
-                            serie.data.push(data.value);
-                            var year = void 0,
-                                month = void 0,
-                                date = void 0,
-                                hours = void 0,
-                                minutes = void 0,
+                            var _year = void 0,
+                                _month = void 0,
+                                _day = void 0,
+                                _hours = void 0,
+                                _minutes = void 0,
+                                _date = void 0,
                                 timestamp = void 0;
                             timestamp = new Date(data.timestamp);
-                            year = timestamp.getFullYear();
-                            month = timestamp.getMonth();
-                            date = timestamp.getDate();
-                            hours = timestamp.getHours();
-                            minutes = timestamp.getMinutes();
-                            dates.push(year + '/' + (month + 1) + '/' + date + ' ' + hours + ':' + minutes);
+                            _year = timestamp.getFullYear();
+                            _month = timestamp.getMonth();
+                            _day = timestamp.getDate();
+                            _hours = timestamp.getHours();
+                            _minutes = timestamp.getMinutes();
+                            _date = _year + '/' + (_month + 1) + '/' + _day + ' ' + _hours + ':' + _minutes;
+                            var index = _.indexOf(dates, _date);
+                            serie.data[index] = data.value;
                         }
                     }
                 } catch (err) {
@@ -88691,12 +88748,15 @@ var RTDataMonitorPanel = React.createClass({
                 splitNumber: 10
             }, {
                 name: "水位",
-                type: 'value'
+                type: 'value',
+                min: 1579,
+                max: 1580
             }, {
                 name: "降雨量",
                 nameLocation: 'middle',
                 type: 'value',
-                splitNumber: 0,
+                min: 2900,
+                max: 3100,
                 axisTick: {
                     inside: true
                 },
@@ -88709,39 +88769,84 @@ var RTDataMonitorPanel = React.createClass({
         chart.setOption(option);
     },
     componentDidUpdate: function componentDidUpdate() {
-        var _props = this.props;
-        var rTDatas = _props.rTDatas;
-        var updateDataName = _props.updateDataName;
+        var _props2 = this.props;
+        var rTDatas = _props2.rTDatas;
+        var timeLong = _props2.timeLong;
+        var timeSpace = _props2.timeSpace;
 
+        var datesCount = timeLong / timeSpace;
+        var dates = new Array(datesCount);
+        var cDate = new Date();
+        for (var n = datesCount; n > 0; n--) {
+            var year = void 0,
+                month = void 0,
+                day = void 0,
+                hours = void 0,
+                minutes = void 0,
+                date = void 0;
+            date = new Date(cDate.getTime() - (datesCount - n) * timeSpace);
+            year = date.getFullYear();
+            month = date.getMonth();
+            day = date.getDate();
+            hours = date.getHours();
+            minutes = date.getMinutes();
+            dates[n - 1] = year + '/' + (month + 1) + '/' + day + ' ' + hours + ':' + minutes;
+        }
         var series = [];
-        var dates = [];
-        var serie = {};
-        serie.name = updateDataName;
-        serie.data = [];
         var _iteratorNormalCompletion3 = true;
         var _didIteratorError3 = false;
         var _iteratorError3 = undefined;
 
         try {
-            for (var _iterator3 = rTDatas[updateDataName].datas[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                var data = _step3.value;
+            for (var _iterator3 = _.keys(rTDatas)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                var dataName = _step3.value;
 
-                if (!_.isNull(data)) {
-                    serie.data.push(data.value);
-                    var year = void 0,
-                        month = void 0,
-                        date = void 0,
-                        hours = void 0,
-                        minutes = void 0,
-                        timestamp = void 0;
-                    timestamp = new Date(data.timestamp);
-                    year = timestamp.getFullYear();
-                    month = timestamp.getMonth();
-                    date = timestamp.getDate();
-                    hours = timestamp.getHours();
-                    minutes = timestamp.getMinutes();
-                    dates.push(year + '/' + (month + 1) + '/' + date + ' ' + hours + ':' + minutes);
+                var serie = {};
+                serie.name = dataName;
+                serie.data = new Array(dates.length).fill(undefined);
+                var _iteratorNormalCompletion4 = true;
+                var _didIteratorError4 = false;
+                var _iteratorError4 = undefined;
+
+                try {
+                    for (var _iterator4 = rTDatas[dataName].datas[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                        var data = _step4.value;
+
+                        if (!_.isNull(data)) {
+                            var _year2 = void 0,
+                                _month2 = void 0,
+                                _day2 = void 0,
+                                _hours2 = void 0,
+                                _minutes2 = void 0,
+                                _date2 = void 0,
+                                timestamp = void 0;
+                            timestamp = new Date(data.timestamp);
+                            _year2 = timestamp.getFullYear();
+                            _month2 = timestamp.getMonth();
+                            _day2 = timestamp.getDate();
+                            _hours2 = timestamp.getHours();
+                            _minutes2 = timestamp.getMinutes();
+                            _date2 = _year2 + '/' + (_month2 + 1) + '/' + _day2 + ' ' + _hours2 + ':' + _minutes2;
+                            var index = _.indexOf(dates, _date2);
+                            serie.data[index] = data.value;
+                        }
+                    }
+                } catch (err) {
+                    _didIteratorError4 = true;
+                    _iteratorError4 = err;
+                } finally {
+                    try {
+                        if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                            _iterator4.return();
+                        }
+                    } finally {
+                        if (_didIteratorError4) {
+                            throw _iteratorError4;
+                        }
+                    }
                 }
+
+                series.push(serie);
             }
         } catch (err) {
             _didIteratorError3 = true;
@@ -88758,7 +88863,6 @@ var RTDataMonitorPanel = React.createClass({
             }
         }
 
-        series.push(serie);
         var option = {
             xAxis: {
                 data: dates

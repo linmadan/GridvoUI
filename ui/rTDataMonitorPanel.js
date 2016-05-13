@@ -6,16 +6,29 @@ var chart;
 var RTDataMonitorPanel = React.createClass({
     componentDidMount: function () {
         chart = Echarts.init(document.getElementById('rTDataCharts'));
-        var {rTDatas} = this.props;
+        var {rTDatas,timeLong,timeSpace} = this.props;
+        var datesCount = timeLong / timeSpace;
+        var dates = new Array(datesCount);
+        var cDate = new Date();
+        for (let n = datesCount; n > 0; n--) {
+            let year, month, day, hours, minutes, date;
+            date = new Date(cDate.getTime() - (datesCount - n) * timeSpace);
+            year = date.getFullYear();
+            month = date.getMonth();
+            day = date.getDate();
+            hours = date.getHours();
+            minutes = date.getMinutes();
+            dates[n - 1] = `${year}/${month + 1}/${day} ${hours}:${minutes}`;
+        }
         var legend = [];
         var series = [];
-        var dates = [];
         for (let dataName of _.keys(rTDatas)) {
             legend.push(dataName);
             let serie = {};
             serie.name = dataName;
             serie.type = "line";
-            if (false) {
+            if (dataName.indexOf("_SQSW") != -1 || dataName.indexOf("_SHSW") != -1) {
+                serie.type = "bar";
                 serie.yAxisIndex = 1;
             }
             if (dataName.indexOf("_LJYL") != -1) {
@@ -24,18 +37,19 @@ var RTDataMonitorPanel = React.createClass({
                 serie.areaStyle = {normal: {}};
                 serie.lineStyle = {normal: {width: 1}};
             }
-            serie.data = [];
+            serie.data = new Array(dates.length).fill(undefined);
             for (let data of rTDatas[dataName].datas) {
                 if (!_.isNull(data)) {
-                    serie.data.push(data.value);
-                    let year, month, date, hours, minutes, timestamp;
+                    let year, month, day, hours, minutes, date, timestamp;
                     timestamp = new Date(data.timestamp);
                     year = timestamp.getFullYear();
                     month = timestamp.getMonth();
-                    date = timestamp.getDate();
+                    day = timestamp.getDate();
                     hours = timestamp.getHours();
                     minutes = timestamp.getMinutes();
-                    dates.push(`${year}/${month + 1}/${date} ${hours}:${minutes}`);
+                    date = `${year}/${month + 1}/${day} ${hours}:${minutes}`;
+                    let index = _.indexOf(dates, date);
+                    serie.data[index] = (data.value);
                 }
             }
             series.push(serie);
@@ -77,11 +91,14 @@ var RTDataMonitorPanel = React.createClass({
             }, {
                 name: "水位",
                 type: 'value',
+                min: 1579,
+                max: 1580
             }, {
                 name: "降雨量",
                 nameLocation: 'middle',
                 type: 'value',
-                splitNumber: 0,
+                min: 2900,
+                max: 3100,
                 axisTick: {
                     inside: true
                 },
@@ -94,26 +111,41 @@ var RTDataMonitorPanel = React.createClass({
         chart.setOption(option);
     },
     componentDidUpdate: function () {
-        var {rTDatas,updateDataName} = this.props;
-        var series = [];
-        var dates = [];
-        let serie = {};
-        serie.name = updateDataName;
-        serie.data = [];
-        for (let data of rTDatas[updateDataName].datas) {
-            if (!_.isNull(data)) {
-                serie.data.push(data.value);
-                let year, month, date, hours, minutes, timestamp;
-                timestamp = new Date(data.timestamp);
-                year = timestamp.getFullYear();
-                month = timestamp.getMonth();
-                date = timestamp.getDate();
-                hours = timestamp.getHours();
-                minutes = timestamp.getMinutes();
-                dates.push(`${year}/${month + 1}/${date} ${hours}:${minutes}`);
-            }
+        var {rTDatas,timeLong,timeSpace} = this.props;
+        var datesCount = timeLong / timeSpace;
+        var dates = new Array(datesCount);
+        var cDate = new Date();
+        for (let n = datesCount; n > 0; n--) {
+            let year, month, day, hours, minutes, date;
+            date = new Date(cDate.getTime() - (datesCount - n) * timeSpace);
+            year = date.getFullYear();
+            month = date.getMonth();
+            day = date.getDate();
+            hours = date.getHours();
+            minutes = date.getMinutes();
+            dates[n - 1] = `${year}/${month + 1}/${day} ${hours}:${minutes}`;
         }
-        series.push(serie);
+        var series = [];
+        for (let dataName of _.keys(rTDatas)) {
+            let serie = {};
+            serie.name = dataName;
+            serie.data = new Array(dates.length).fill(undefined);
+            for (let data of rTDatas[dataName].datas) {
+                if (!_.isNull(data)) {
+                    let year, month, day, hours, minutes, date, timestamp;
+                    timestamp = new Date(data.timestamp);
+                    year = timestamp.getFullYear();
+                    month = timestamp.getMonth();
+                    day = timestamp.getDate();
+                    hours = timestamp.getHours();
+                    minutes = timestamp.getMinutes();
+                    date = `${year}/${month + 1}/${day} ${hours}:${minutes}`;
+                    let index = _.indexOf(dates, date);
+                    serie.data[index] = (data.value);
+                }
+            }
+            series.push(serie);
+        }
         var option = {
             xAxis: {
                 data: dates
