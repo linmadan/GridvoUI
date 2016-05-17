@@ -1,11 +1,18 @@
 var React = require('react');
 var ReactDOM = require('react-dom');
 var RTDataDashBoard = require('./rTDataDashBoard.js');
+var ConfigDashBoard = require('./configDashBoard.js');
 
 var MainDashBoard = React.createClass({
     loadRTDataDashBoard: function (event) {
         ReactDOM.render(
             <RTDataDashBoard stationName={this.props.stationName}/>,
+            document.getElementById('content')
+        );
+    },
+    loadConfigDashBoard: function (event) {
+        ReactDOM.render(
+            <ConfigDashBoard stationName={this.props.stationName}/>,
             document.getElementById('content')
         );
     },
@@ -38,12 +45,12 @@ var MainDashBoard = React.createClass({
                             历史查询
                         </p>
                     </a>
-                    <a href="#" className="weui_grid">
+                    <a href="#" onClick={this.loadConfigDashBoard} className="weui_grid">
                         <div className="weui_grid_icon">
                             <i className="icon icon_gdgn"></i>
                         </div>
                         <p className="weui_grid_label">
-                            更多功能
+                            配置选项
                         </p>
                     </a>
                 </div>

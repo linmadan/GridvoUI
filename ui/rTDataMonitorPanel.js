@@ -6,7 +6,7 @@ var chart;
 var RTDataMonitorPanel = React.createClass({
     componentDidMount: function () {
         chart = Echarts.init(document.getElementById('rTDataCharts'));
-        var {rTDatas,timeLong,timeSpace} = this.props;
+        var {rTDatas,timeLong,timeSpace,dVConfigs} = this.props;
         var datesCount = timeLong / timeSpace;
         var dates = new Array(datesCount);
         var cDate = new Date();
@@ -23,19 +23,19 @@ var RTDataMonitorPanel = React.createClass({
         var legend = [];
         var series = [];
         for (let dataName of _.keys(rTDatas)) {
-            legend.push(dataName);
+            legend.push(dVConfigs[dataName].visualName);
             let serie = {};
-            serie.name = dataName;
+            serie.name = dVConfigs[dataName].visualName;
             serie.type = "line";
             if (dataName.indexOf("_SQSW") != -1 || dataName.indexOf("_SHSW") != -1) {
-                serie.type = "bar";
                 serie.yAxisIndex = 1;
-            }
-            if (dataName.indexOf("_LJYL") != -1) {
-                serie.yAxisIndex = 2;
                 serie.hoverAnimation = false;
                 serie.areaStyle = {normal: {}};
                 serie.lineStyle = {normal: {width: 1}};
+            }
+            if (dataName.indexOf("_LJYL") != -1) {
+                serie.yAxisIndex = 2;
+                serie.type = "bar";
             }
             serie.data = new Array(dates.length).fill(undefined);
             for (let data of rTDatas[dataName].datas) {
@@ -53,6 +53,65 @@ var RTDataMonitorPanel = React.createClass({
                 }
             }
             series.push(serie);
+        }
+        var maxPQV, minPQV, maxSWV, minSWV, maxYLV, minYLV;
+        maxPQV = minPQV = maxSWV = minSWV = maxYLV = minYLV = "auto";
+        for (let dataName of _.keys(dVConfigs)) {
+            let dVConfig = dVConfigs[dataName];
+            if (dataName.indexOf("_P") != -1 || dataName.indexOf("_Q") != -1) {
+                if (!_.isNull(dVConfig.maxV)) {
+                    if (maxPQV == "auto") {
+                        maxPQV = 0;
+                    }
+                    if (dVConfig.maxV > maxPQV) {
+                        maxPQV = dVConfig.maxV;
+                    }
+                }
+                if (!_.isNull(dVConfig.minV)) {
+                    if (maxPQV == "auto") {
+                        minPQV = 100000;
+                    }
+                    if (dVConfig.minV < minPQV) {
+                        minPQV = dVConfig.minV;
+                    }
+                }
+            }
+            if (dataName.indexOf("_LJYL") != -1) {
+                if (!_.isNull(dVConfig.maxV)) {
+                    if (maxYLV == "auto") {
+                        maxYLV = 0;
+                    }
+                    if (dVConfig.maxV > maxYLV) {
+                        maxYLV = dVConfig.maxV;
+                    }
+                }
+                if (!_.isNull(dVConfig.minV)) {
+                    if (minYLV == "auto") {
+                        minYLV = 100000;
+                    }
+                    if (dVConfig.minV < minYLV) {
+                        minYLV = dVConfig.minV;
+                    }
+                }
+            }
+            if (dataName.indexOf("_SQSW") != -1 || dataName.indexOf("_SHSW") != -1) {
+                if (!_.isNull(dVConfig.maxV)) {
+                    if (maxSWV == "auto") {
+                        maxSWV = 0;
+                    }
+                    if (dVConfig.maxV > maxSWV) {
+                        maxSWV = dVConfig.maxV;
+                    }
+                }
+                if (!_.isNull(dVConfig.minV)) {
+                    if (minSWV == "auto") {
+                        minSWV = 100000;
+                    }
+                    if (dVConfig.minV < minSWV) {
+                        minSWV = dVConfig.minV;
+                    }
+                }
+            }
         }
         var option = {
             title: {
@@ -87,18 +146,20 @@ var RTDataMonitorPanel = React.createClass({
             yAxis: [{
                 name: "发电量",
                 type: 'value',
-                splitNumber: 10
+                splitNumber: 10,
+                max: maxPQV,
+                min: minPQV
             }, {
                 name: "水位",
                 type: 'value',
-                min: 1579,
-                max: 1580
+                max: maxSWV,
+                min: minSWV
             }, {
                 name: "降雨量",
                 nameLocation: 'middle',
                 type: 'value',
-                min: 2900,
-                max: 3100,
+                max: maxYLV,
+                min: minYLV,
                 axisTick: {
                     inside: true
                 },
@@ -111,7 +172,7 @@ var RTDataMonitorPanel = React.createClass({
         chart.setOption(option);
     },
     componentDidUpdate: function () {
-        var {rTDatas,timeLong,timeSpace} = this.props;
+        var {rTDatas,timeLong,timeSpace,dVConfigs} = this.props;
         var datesCount = timeLong / timeSpace;
         var dates = new Array(datesCount);
         var cDate = new Date();
@@ -128,7 +189,7 @@ var RTDataMonitorPanel = React.createClass({
         var series = [];
         for (let dataName of _.keys(rTDatas)) {
             let serie = {};
-            serie.name = dataName;
+            serie.name = dVConfigs[dataName].visualName;
             serie.data = new Array(dates.length).fill(undefined);
             for (let data of rTDatas[dataName].datas) {
                 if (!_.isNull(data)) {

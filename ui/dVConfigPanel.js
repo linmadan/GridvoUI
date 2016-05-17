@@ -2,11 +2,11 @@ var _ = require('underscore');
 var React = require('react');
 var mqtt = require('mqtt');
 
-var client, rDConfigs = null;
-var RTDataConfigPanel = React.createClass({
+var client, dVConfigs = null;
+var DVConfigPanel = React.createClass({
     getInitialState: function () {
         return {
-            rDConfigs: null,
+            dVConfigs: null,
             isSubmit: false
         };
     },
@@ -15,11 +15,11 @@ var RTDataConfigPanel = React.createClass({
         client = mqtt.connect('ws://10.0.3.16:61623', {"username": "gridvo", "password": "gridvo"});
         client.on('connect', function () {
             client.on('message', function (topic, message) {
-                    if (topic == `${panel.props.stationName}/stationRDConfig`) {
+                    if (topic == `${panel.props.stationName}/stationDVConfig`) {
                         var result = JSON.parse(message.toString());
-                        rDConfigs = result.rDConfigs;
+                        dVConfigs = result.dVConfigs;
                         panel.setState({
-                            rDConfigs: rDConfigs
+                            dVConfigs: dVConfigs
                         });
                     }
                 }
@@ -27,16 +27,16 @@ var RTDataConfigPanel = React.createClass({
             client.on('close', function () {
                 console.log("close success");
             });
-            client.subscribe(`${panel.props.stationName}/stationRDConfig`);
-            client.publish(`stationRDConfig/${panel.props.stationName}`, '');
+            client.subscribe(`${panel.props.stationName}/stationDVConfig`);
+            client.publish(`stationDVConfig/${panel.props.stationName}`, '');
             console.log("connect success");
         });
     },
     componentDidUpdate: function () {
         if (this.state.isSubmit) {
-            var rdcp = this;
+            var dvcp = this;
             setTimeout(function () {
-                rdcp.setState({
+                dvcp.setState({
                     isSubmit: false
                 })
             }, 2000);
@@ -46,94 +46,76 @@ var RTDataConfigPanel = React.createClass({
         client.end();
     },
     handleChange: function (event) {
-        var {rDConfigs} = this.state;
+        var {dVConfigs} = this.state;
         var dataName = event.target.name.split("-")[0];
         var configName = event.target.name.split("-")[1];
-        if (configName == "openRDM" || configName == "isPubAllRTData") {
-            rDConfigs[dataName][configName] = event.target.checked;
-        }
-        else {
-            rDConfigs[dataName][configName] = parseInt(event.target.value) * 60000;
-        }
-        this.setState(rDConfigs);
+        dVConfigs[dataName][configName] = event.target.value;
+        this.setState({
+            dVConfigs: dVConfigs
+        });
     },
     submitHandler: function (event) {
         event.preventDefault();
-        var stationRTDataConfig = {};
-        stationRTDataConfig.stationName = this.props.stationName;
-        stationRTDataConfig.rTDataConfigs = this.state.rDConfigs;
-        client.publish(`setStationRTData/${this.props.stationName}`, JSON.stringify(stationRTDataConfig));
+        var stationDVConfig = {};
+        stationDVConfig.stationName = this.props.stationName;
+        stationDVConfig.dVConfigs = this.state.dVConfigs;
+        client.publish(`setStationDVConfig/${this.props.stationName}`, JSON.stringify(stationDVConfig));
         this.setState({
             isSubmit: true
         });
     },
     render: function () {
-        var {rDConfigs} = this.state;
-        var rdcp = this;
-        var rDCUIs = [];
-        _.each(_.keys(rDConfigs), function (key) {
-            var rDConfig = rDConfigs[key];
+        var {dVConfigs} = this.state;
+        var dvcp = this;
+        var dVCUIs = [];
+        _.each(_.keys(dVConfigs), function (key) {
+            var dVConfig = dVConfigs[key];
             var ui = (
-                <div key={rDConfig.dataName}>
+                <div key={dVConfig.dataName}>
                     <div className="weui_cells_title">
-                        {rDConfig.dataName}
+                        {dVConfig.dataName}
                     </div>
                     <div className="weui_cells weui_cells_form">
-                        <div className="weui_cell weui_cell_switch">
-                            <div className="weui_cell_hd weui_cell_primary">开启实时监控</div>
-                            <div className="weui_cell_ft">
-                                <input className="weui_switch" type="checkbox" name={`${rDConfig.dataName}-openRDM`}
-                                       checked={rDConfig.openRDM} onChange={rdcp.handleChange}/>
+                        <div className="weui_cell">
+                            <div className="weui_cell_hd">
+                                可视化名称
+                            </div>
+                            <div className="weui_cell_bd weui_cell_primary">
+                                <input className="weui_input" type="text"
+                                       name={`${dVConfig.dataName}-visualName`}
+                                       value={dVConfig.visualName} onChange={dvcp.handleChange}/>
                             </div>
                         </div>
                         <div className="weui_cell">
                             <div className="weui_cell_hd">
-                                时间间隔
+                                范围上限值
                             </div>
                             <div className="weui_cell_bd weui_cell_primary">
                                 <input className="weui_input" type="number" pattern="[0-9]*"
-                                       name={`${rDConfig.dataName}-timeSpace`}
-                                       value={rDConfig.timeSpace/60000} onChange={rdcp.handleChange}/>
+                                       name={`${dVConfig.dataName}-maxV`}
+                                       value={dVConfig.maxV} onChange={dvcp.handleChange}/>
                             </div>
                         </div>
                         <div className="weui_cell">
                             <div className="weui_cell_hd">
-                                时间长度
+                                范围下限值
                             </div>
                             <div className="weui_cell_bd weui_cell_primary">
                                 <input className="weui_input" type="number" pattern="[0-9]*"
-                                       name={`${rDConfig.dataName}-timeLong`}
-                                       value={rDConfig.timeLong/60000} onChange={rdcp.handleChange}/>
-                            </div>
-                        </div>
-                        <div className="weui_cell weui_cell_switch">
-                            <div className="weui_cell_hd weui_cell_primary">全数据推送</div>
-                            <div className="weui_cell_ft">
-                                <input className="weui_switch" type="checkbox"
-                                       name={`${rDConfig.dataName}-isPubAllRTData`} checked={rDConfig.isPubAllRTData}
-                                       onChange={rdcp.handleChange}/>
-                            </div>
-                        </div>
-                        <div className="weui_cell">
-                            <div className="weui_cell_hd">
-                                推送间隔
-                            </div>
-                            <div className="weui_cell_bd weui_cell_primary">
-                                <input className="weui_input" type="number" pattern="[0-9]*"
-                                       name={`${rDConfig.dataName}-pubDataSpace`}
-                                       value={rDConfig.pubDataSpace/60000} onChange={rdcp.handleChange}/>
+                                       name={`${dVConfig.dataName}-minV`}
+                                       value={dVConfig.minV} onChange={dvcp.handleChange}/>
                             </div>
                         </div>
                     </div>
                 </div>
             );
-            rDCUIs.push(ui);
+            dVCUIs.push(ui);
         })
-        if (_.isNull(rDConfigs)) {
+        if (_.isNull(dVConfigs)) {
             return (
                 <div>
                     <div className="hd">
-                        <h3 className="page_title">实时监控设置</h3>
+                        <h3 className="page_title">数据可视化设置</h3>
                     </div>
                     <div className="bd">
                         <div id="loadingToast" className="weui_loading_toast">
@@ -164,11 +146,11 @@ var RTDataConfigPanel = React.createClass({
             return (
                 <div>
                     <div className="hd">
-                        <h3 className="page_title">实时监控设置</h3>
+                        <h3 className="page_title">数据可视化设置</h3>
                     </div>
                     <div className="bd">
                         <form onSubmit={this.submitHandler}>
-                            {rDCUIs}
+                            {dVCUIs}
                             <button className="weui_btn weui_btn_primary" type="submit">提 交</button>
                         </form>
                         <div id="toast" style={this.state.isSubmit?{display: "inherit"}:{display: "none"}}>
@@ -186,4 +168,4 @@ var RTDataConfigPanel = React.createClass({
     }
 });
 
-module.exports = RTDataConfigPanel;
+module.exports = DVConfigPanel;
