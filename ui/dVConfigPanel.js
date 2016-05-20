@@ -106,6 +106,16 @@ var DVConfigPanel = React.createClass({
                                        value={dVConfig.minV} onChange={dvcp.handleChange}/>
                             </div>
                         </div>
+                        <div className="weui_cell">
+                            <div className="weui_cell_hd">
+                                轴间隔值
+                            </div>
+                            <div className="weui_cell_bd weui_cell_primary">
+                                <input className="weui_input" type="number" pattern="[0-9]*"
+                                       name={`${dVConfig.dataName}-axisIntervalV`}
+                                       value={dVConfig.axisIntervalV} onChange={dvcp.handleChange}/>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );

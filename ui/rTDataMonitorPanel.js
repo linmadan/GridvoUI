@@ -54,8 +54,9 @@ var RTDataMonitorPanel = React.createClass({
             }
             series.push(serie);
         }
-        var maxPQV, minPQV, maxSWV, minSWV, maxYLV, minYLV;
+        var maxPQV, minPQV, maxSWV, minSWV, maxYLV, minYLV, intervalPQV, intervalSWV, intervalYLV;
         maxPQV = minPQV = maxSWV = minSWV = maxYLV = minYLV = "auto";
+        intervalPQV = intervalSWV = intervalYLV = 0;
         for (let dataName of _.keys(dVConfigs)) {
             let dVConfig = dVConfigs[dataName];
             if (dataName.indexOf("_P") != -1 || dataName.indexOf("_Q") != -1) {
@@ -75,6 +76,9 @@ var RTDataMonitorPanel = React.createClass({
                         minPQV = dVConfig.minV;
                     }
                 }
+                if (dVConfig.axisIntervalV > intervalPQV) {
+                    intervalPQV = dVConfig.axisIntervalV;
+                }
             }
             if (dataName.indexOf("_LJYL") != -1) {
                 if (!_.isNull(dVConfig.maxV)) {
@@ -93,6 +97,9 @@ var RTDataMonitorPanel = React.createClass({
                         minYLV = dVConfig.minV;
                     }
                 }
+                if (dVConfig.axisIntervalV > intervalYLV) {
+                    intervalYLV = dVConfig.axisIntervalV;
+                }
             }
             if (dataName.indexOf("_SQSW") != -1 || dataName.indexOf("_SHSW") != -1) {
                 if (!_.isNull(dVConfig.maxV)) {
@@ -110,6 +117,9 @@ var RTDataMonitorPanel = React.createClass({
                     if (dVConfig.minV < minSWV) {
                         minSWV = dVConfig.minV;
                     }
+                }
+                if (dVConfig.axisIntervalV > intervalSWV) {
+                    intervalSWV = dVConfig.axisIntervalV;
                 }
             }
         }
@@ -148,18 +158,21 @@ var RTDataMonitorPanel = React.createClass({
                 type: 'value',
                 splitNumber: 10,
                 max: maxPQV,
-                min: minPQV
+                min: minPQV,
+                interval: intervalPQV
             }, {
                 name: "水位",
                 type: 'value',
                 max: maxSWV,
-                min: minSWV
+                min: minSWV,
+                interval: intervalSWV
             }, {
                 name: "降雨量",
                 nameLocation: 'middle',
                 type: 'value',
                 max: maxYLV,
                 min: minYLV,
+                interval: intervalYLV,
                 axisTick: {
                     inside: true
                 },
