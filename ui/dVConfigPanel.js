@@ -39,7 +39,7 @@ var DVConfigPanel = React.createClass({
                 dvcp.setState({
                     isSubmit: false
                 })
-            }, 2000);
+            }, 1500);
         }
     },
     componentWillUnmount: function () {
@@ -49,7 +49,12 @@ var DVConfigPanel = React.createClass({
         var {dVConfigs} = this.state;
         var dataName = event.target.name.split("-")[0];
         var configName = event.target.name.split("-")[1];
-        dVConfigs[dataName][configName] = event.target.value;
+        if (configName == "maxV" || configName == "minV" || configName == "axisIntervalV" || configName == "splitNumber") {
+            dVConfigs[dataName][configName] = parseInt(event.target.value);
+        }
+        else {
+            dVConfigs[dataName][configName] = event.target.value;
+        }
         this.setState({
             dVConfigs: dVConfigs
         });

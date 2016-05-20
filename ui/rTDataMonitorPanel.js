@@ -69,7 +69,7 @@ var RTDataMonitorPanel = React.createClass({
                     }
                 }
                 if (!_.isNull(dVConfig.minV)) {
-                    if (maxPQV == "auto") {
+                    if (minPQV == "auto") {
                         minPQV = 100000;
                     }
                     if (dVConfig.minV < minPQV) {
@@ -165,7 +165,6 @@ var RTDataMonitorPanel = React.createClass({
             yAxis: [{
                 name: "发电量",
                 type: 'value',
-                splitNumber: 10,
                 max: maxPQV,
                 min: minPQV,
                 interval: intervalPQV,

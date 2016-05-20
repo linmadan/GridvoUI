@@ -88370,7 +88370,7 @@ var DVConfigPanel = React.createClass({
                 dvcp.setState({
                     isSubmit: false
                 });
-            }, 2000);
+            }, 1500);
         }
     },
     componentWillUnmount: function componentWillUnmount() {
@@ -88381,7 +88381,11 @@ var DVConfigPanel = React.createClass({
 
         var dataName = event.target.name.split("-")[0];
         var configName = event.target.name.split("-")[1];
-        dVConfigs[dataName][configName] = event.target.value;
+        if (configName == "maxV" || configName == "minV" || configName == "axisIntervalV" || configName == "splitNumber") {
+            dVConfigs[dataName][configName] = parseInt(event.target.value);
+        } else {
+            dVConfigs[dataName][configName] = event.target.value;
+        }
         this.setState({
             dVConfigs: dVConfigs
         });
@@ -89284,8 +89288,6 @@ module.exports = RTDataDashBoard;
 },{"./mainDashBoard.js":862,"./rTDataMonitorPanel.js":865,"mqtt":647,"react":858,"react-dom":702,"underscore":859}],865:[function(require,module,exports){
 'use strict';
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 var _ = require('underscore');
 var React = require('react');
 var Echarts = require('echarts');
@@ -89426,7 +89428,7 @@ var RTDataMonitorPanel = React.createClass({
                         }
                     }
                     if (!_.isNull(dVConfig.minV)) {
-                        if (maxPQV == "auto") {
+                        if (minPQV == "auto") {
                             minPQV = 100000;
                         }
                         if (dVConfig.minV < minPQV) {
@@ -89531,14 +89533,14 @@ var RTDataMonitorPanel = React.createClass({
                 axisLine: { onZero: false },
                 data: dates
             },
-            yAxis: [_defineProperty({
+            yAxis: [{
                 name: "发电量",
                 type: 'value',
-                splitNumber: 10,
                 max: maxPQV,
                 min: minPQV,
-                interval: intervalPQV
-            }, 'splitNumber', splitNumberPQ), {
+                interval: intervalPQV,
+                splitNumber: splitNumberPQ
+            }, {
                 name: "水位",
                 type: 'value',
                 max: maxSWV,
