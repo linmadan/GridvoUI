@@ -155,8 +155,13 @@ body {
     background-size: 28px 28px
 }
 
-.icon_gdgn {
+.icon_pzxx {
     background: url(../images/icon_nav_actionSheet.png) no-repeat;
+    background-size: 28px 28px
+}
+
+.icon_qhzd {
+    background: url(../images/icon_nav_article.png) no-repeat;
     background-size: 28px 28px
 }
 
