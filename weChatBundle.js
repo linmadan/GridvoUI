@@ -85600,7 +85600,7 @@ var ReactDOM = require('react-dom');
 var SelectStationPanel = require("./lib/ui/selectStationPanel.js");
 require('pomelo-cocos2d-js');
 
-var getCookie = function getCookie(cname) {
+window.getCookie = function (cname) {
     if (document.cookie.length > 0) {
         c_start = document.cookie.indexOf(c_name + "=");
         if (c_start != -1) {
@@ -85616,7 +85616,7 @@ var getCookie = function getCookie(cname) {
 };
 var pomelo = window.pomelo;
 pomelo.init({
-    host: "pascal.gridvo.com",
+    host: "117.27.142.62",
     port: "3010",
     log: true
 }, function () {
@@ -85627,13 +85627,13 @@ pomelo.init({
             return;
         }
         pomelo.init({
-            host: result.host,
+            host: "117.27.142.62",
             port: result.port,
             log: true
         }, function () {
             pomelo.request("stationConnector.employeeEntryHandler.entry", {
-                accountID: getCookie("accountID"),
-                accountType: getCookie("accountType")
+                accountID: window.getCookie("accountID"),
+                accountType: window.getCookie("accountType")
             }, function (result) {
                 if (result.code === 500) {
                     console.log("station employee entry fail");
